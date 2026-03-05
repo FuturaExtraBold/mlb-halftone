@@ -71,6 +71,136 @@ function hexToRgba(hex, opacity) {
   return `rgba(${r},${g},${b},${opacity})`;
 }
 
+function drawShape(ctx, cx, cy, r, shape) {
+  if (r <= 0) return;
+
+  switch (shape) {
+    case "square":
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      break;
+
+    case "diamond":
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r);
+      ctx.lineTo(cx - r, cy);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case "cross": {
+      const t = r / 3;
+      ctx.fillRect(cx - t, cy - r, t * 2, r * 2);
+      ctx.fillRect(cx - r, cy - t, r * 2, t * 2);
+      break;
+    }
+
+    case "x": {
+      const t = r / 3;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-t, -r, t * 2, r * 2);
+      ctx.fillRect(-r, -t, r * 2, t * 2);
+      ctx.restore();
+      break;
+    }
+
+    case "triangle":
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r * 0.866, cy + r * 0.5);
+      ctx.lineTo(cx - r * 0.866, cy + r * 0.5);
+      ctx.closePath();
+      ctx.fill();
+      break;
+
+    case "star": {
+      const outerR = r;
+      const innerR = r * 0.4;
+      const points = 5;
+      ctx.beginPath();
+      for (let i = 0; i < points * 2; i++) {
+        const angle = (i * Math.PI) / points - Math.PI / 2;
+        const rad = i % 2 === 0 ? outerR : innerR;
+        const x = cx + Math.cos(angle) * rad;
+        const y = cy + Math.sin(angle) * rad;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
+
+    case "circle":
+    default:
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+  }
+}
+
+function computeStaggerOffsets(cols, rows, staggerType) {
+  const total = cols * rows;
+  const offsets = new Float32Array(total);
+
+  if (staggerType === "none") {
+    return offsets; // all zeros
+  }
+
+  const centerCol = (cols - 1) / 2;
+  const centerRow = (rows - 1) / 2;
+  const maxDist = Math.sqrt(centerCol * centerCol + centerRow * centerRow) || 1;
+
+  let min = Infinity;
+  let max = -Infinity;
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const i = row * cols + col;
+      let val;
+
+      switch (staggerType) {
+        case "left-right":
+          val = col / Math.max(1, cols - 1);
+          break;
+        case "top-bottom":
+          val = row / Math.max(1, rows - 1);
+          break;
+        case "center-out": {
+          const dc = col - centerCol;
+          const dr = row - centerRow;
+          val = Math.sqrt(dc * dc + dr * dr) / maxDist;
+          break;
+        }
+        case "random":
+          val = Math.random();
+          break;
+        case "wave":
+          val = (col / Math.max(1, cols - 1) + row / Math.max(1, rows - 1)) / 2;
+          break;
+        default:
+          val = 0;
+      }
+
+      offsets[i] = val;
+      if (val < min) min = val;
+      if (val > max) max = val;
+    }
+  }
+
+  // Normalize to [0, 1]
+  const range = max - min || 1;
+  for (let i = 0; i < total; i++) {
+    offsets[i] = (offsets[i] - min) / range;
+  }
+
+  return offsets;
+}
+
 export function HalftoneImage() {
   const { hoveredTeam, config } = useApp();
   const canvasRef = useRef(null);
@@ -79,6 +209,7 @@ export function HalftoneImage() {
   const tweenRef = useRef(null);
   const imageAspectRef = useRef(null);
   const configRef = useRef(config);
+  const staggerOffsetsRef = useRef(new Float32Array(0));
 
   // Keep configRef in sync with latest config every render
   configRef.current = config;
@@ -113,6 +244,12 @@ export function HalftoneImage() {
       for (let i = 0; i < Math.min(oldRadii.length, newTotal); i++) {
         dotRadiiRef.current[i] = oldRadii[i];
       }
+      // Recompute stagger offsets for new grid dimensions
+      staggerOffsetsRef.current = computeStaggerOffsets(
+        cols,
+        rows,
+        configRef.current.staggerType,
+      );
     }
 
     canvasRef.current.width = cols * gridSize;
@@ -148,6 +285,10 @@ export function HalftoneImage() {
       animationDuration,
       animationEase,
       invertMode,
+      dotShape,
+      transitionMode,
+      staggerType,
+      staggerAmount,
     } = config;
 
     const resolvedDotColor = hexToRgba(dotColorHex, dotOpacity);
@@ -181,42 +322,79 @@ export function HalftoneImage() {
           if (radius > 0) {
             const cx = col * gridSize + gridSize / 2;
             const cy = row * gridSize + gridSize / 2;
-
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.fill();
+            drawShape(ctx, cx, cy, radius, dotShape);
           }
         }
       }
     };
 
-    const animateToRadii = (targetRadii, totalDots) => {
+    // Recompute stagger offsets if staggerType changed or grid is new
+    const { cols, rows } = gridDimensionsRef.current;
+    const totalDots = cols * rows;
+
+    if (staggerOffsetsRef.current.length !== totalDots) {
+      staggerOffsetsRef.current = computeStaggerOffsets(
+        cols,
+        rows,
+        staggerType,
+      );
+    }
+
+    const getStaggerOffsets = () => {
+      // Recompute if stagger type may have changed
+      return computeStaggerOffsets(cols, rows, staggerType);
+    };
+
+    const animateToRadii = (targetRadii, totalDots, duration, onComplete) => {
       if (!isCurrent) return;
 
-      const proxy = { progress: 0 };
+      const proxy = { t: 0 };
       const startRadii = [...dotRadiiRef.current];
+      const staggerOffsets = getStaggerOffsets();
+      const staggerWindow = Math.max(0, Math.min(0.95, staggerAmount));
+      const dotDuration = Math.max(0.001, 1 - staggerWindow);
 
       tweenRef.current = gsap.to(proxy, {
-        progress: 1,
-        duration: animationDuration,
+        t: 1,
+        duration,
         ease: animationEase,
         onUpdate: () => {
-          const p = proxy.progress;
+          const t = proxy.t;
           for (let i = 0; i < totalDots; i++) {
+            const dotStart = staggerOffsets[i] * staggerWindow;
+            const dotP = Math.max(0, Math.min(1, (t - dotStart) / dotDuration));
             dotRadiiRef.current[i] =
-              startRadii[i] + (targetRadii[i] - startRadii[i]) * p;
+              startRadii[i] + (targetRadii[i] - startRadii[i]) * dotP;
           }
           drawDots();
+        },
+        onComplete: () => {
+          if (onComplete) onComplete();
         },
       });
     };
 
-    const { cols, rows } = gridDimensionsRef.current;
-    const totalDots = cols * rows;
+    const runMorphTransition = (targetRadii) => {
+      animateToRadii(targetRadii, totalDots, animationDuration);
+    };
+
+    const runExitEnterTransition = (targetRadii) => {
+      const zeros = new Array(totalDots).fill(0);
+
+      // Exit phase at half duration so enter begins quickly
+      animateToRadii(zeros, totalDots, animationDuration * 0.5, () => {
+        if (!isCurrent) return;
+        animateToRadii(targetRadii, totalDots, animationDuration);
+      });
+    };
 
     if (!hoveredTeam?.playerImage) {
       if (totalDots > 0) {
-        animateToRadii(new Array(totalDots).fill(0), totalDots);
+        if (transitionMode === "exit-enter") {
+          runExitEnterTransition(new Array(totalDots).fill(0));
+        } else {
+          runMorphTransition(new Array(totalDots).fill(0));
+        }
       }
       return () => {
         isCurrent = false;
@@ -226,10 +404,17 @@ export function HalftoneImage() {
     const imageSrc = hoveredTeam.playerImage;
     const cacheKey = `${imageSrc}:${gridSize}`;
 
-    if (totalDots > 0 && imageCache.has(cacheKey)) {
-      const brightnessGrid = imageCache.get(cacheKey);
+    const applyTargetRadii = (brightnessGrid) => {
       const targetRadii = brightnessGrid.map(brightnessToRadius);
-      animateToRadii(targetRadii, totalDots);
+      if (transitionMode === "exit-enter") {
+        runExitEnterTransition(targetRadii);
+      } else {
+        runMorphTransition(targetRadii);
+      }
+    };
+
+    if (totalDots > 0 && imageCache.has(cacheKey)) {
+      applyTargetRadii(imageCache.get(cacheKey));
       return () => {
         isCurrent = false;
       };
@@ -249,7 +434,6 @@ export function HalftoneImage() {
       }
 
       const { cols: curCols, rows: curRows } = gridDimensionsRef.current;
-      const curTotalDots = curCols * curRows;
 
       const brightnessGrid = sampleImageBrightness(
         img,
@@ -258,8 +442,7 @@ export function HalftoneImage() {
         gridSize,
       );
       imageCache.set(cacheKey, brightnessGrid);
-      const targetRadii = brightnessGrid.map(brightnessToRadius);
-      animateToRadii(targetRadii, curTotalDots);
+      applyTargetRadii(brightnessGrid);
     };
     img.src = imageSrc;
 

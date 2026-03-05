@@ -1,4 +1,5 @@
 import { useApp } from "../context/AppContext";
+import { scenarios } from "../halftoneConfig";
 
 const EASE_OPTIONS = [
   "none",
@@ -11,6 +12,14 @@ const EASE_OPTIONS = [
   "circ.out", "circ.in",
   "expo.out", "expo.in",
   "sine.out", "sine.in",
+];
+
+const SHAPE_OPTIONS = [
+  "circle", "square", "diamond", "cross", "x", "triangle", "star",
+];
+
+const STAGGER_OPTIONS = [
+  "none", "left-right", "top-bottom", "center-out", "random", "wave",
 ];
 
 function Slider({ label, name, min, max, step, decimals = 0 }) {
@@ -34,10 +43,27 @@ function Slider({ label, name, min, max, step, decimals = 0 }) {
 }
 
 export function ControlBar() {
-  const { config, updateConfig } = useApp();
+  const { config, updateConfig, applyScenario } = useApp();
 
   return (
     <div className="control-bar">
+      <label className="control-item">
+        <span>Scenario</span>
+        <select
+          defaultValue=""
+          onChange={(e) => {
+            if (e.target.value) applyScenario(scenarios[e.target.value]);
+          }}
+        >
+          <option value="" disabled>— pick one —</option>
+          {Object.keys(scenarios).map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
+      </label>
+
+      <div className="control-divider" />
+
       <label className="control-item control-item--toggle">
         <span>Invert</span>
         <input
@@ -85,6 +111,47 @@ export function ControlBar() {
           ))}
         </select>
       </label>
+
+      <div className="control-divider" />
+
+      <label className="control-item">
+        <span>Shape</span>
+        <select
+          value={config.dotShape}
+          onChange={(e) => updateConfig("dotShape", e.target.value)}
+        >
+          {SHAPE_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+
+      <div className="control-divider" />
+
+      <label className="control-item control-item--toggle">
+        <span>Exit-Enter</span>
+        <input
+          type="checkbox"
+          checked={config.transitionMode === "exit-enter"}
+          onChange={(e) =>
+            updateConfig("transitionMode", e.target.checked ? "exit-enter" : "morph")
+          }
+        />
+      </label>
+
+      <label className="control-item">
+        <span>Stagger</span>
+        <select
+          value={config.staggerType}
+          onChange={(e) => updateConfig("staggerType", e.target.value)}
+        >
+          {STAGGER_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </label>
+
+      <Slider label="Stagger Amt" name="staggerAmount" min={0} max={0.95} step={0.05} decimals={2} />
     </div>
   );
 }

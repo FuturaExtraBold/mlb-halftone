@@ -15,7 +15,7 @@ main {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding-bottom: 60px;
 }
 
@@ -29,27 +29,53 @@ main {
   z-index: 1;
 }
 
-.team-list {
-  position: relative;
+.teams-panel {
+  display: flex;
+  flex-direction: row;
+  align-self: flex-end;
+  justify-self: flex-end;
+  gap: 12px;
   z-index: 10;
+  position: relative;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  margin-left: 14px;
+}
+
+.team-card {
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid #fff;
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: flex-start;
+  width: 170px;
 }
 
-.team-button {
-  padding: 12px 24px;
-  font-size: 18px;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
+.team-card-logo {
+  height: 30px;
+  width: auto;
+  display: block;
+  margin-bottom: 12px;
+  filter: brightness(0) invert(1);
+}
+
+.team-card-roster {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.team-card-player {
+  font-size: 12px;
+  color: #ccc;
+  padding: 2px 4px;
   cursor: pointer;
-  transition: background 0.2s;
+  white-space: nowrap;
 }
 
-.team-button:hover {
-  background: rgba(255, 255, 255, 0.2);
+.team-card-player:hover {
+  color: #fff;
 }
 
 /* Control bar */

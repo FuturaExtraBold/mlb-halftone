@@ -2,8 +2,8 @@ import gsap from "gsap";
 import { useEffect, useRef } from "react";
 import { ControlBar } from "./components/ControlBar";
 import { HalftoneImage } from "./components/HalftoneImage";
+import { Teams } from "./components/Teams";
 import { AppProvider, useApp } from "./context/AppContext";
-import { teams } from "./teams";
 
 function Main() {
   const { hoveredTeam, setHoveredTeam } = useApp();
@@ -29,18 +29,7 @@ function Main() {
   return (
     <main ref={mainRef} style={{ background: getBackground() }}>
       <HalftoneImage />
-      <div className="team-list">
-        {teams.map((team) => (
-          <button
-            key={team.name}
-            className="team-button"
-            onMouseEnter={() => setHoveredTeam(team)}
-            onMouseLeave={() => setHoveredTeam(null)}
-          >
-            {team.name}
-          </button>
-        ))}
-      </div>
+      <Teams />
       <ControlBar />
     </main>
   );

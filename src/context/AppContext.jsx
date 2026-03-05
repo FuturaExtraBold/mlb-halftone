@@ -10,8 +10,11 @@ export function AppProvider({ children }) {
   const updateConfig = (key, value) =>
     setConfig((prev) => ({ ...prev, [key]: value }));
 
+  const applyScenario = (scenario) =>
+    setConfig({ ...scenario });
+
   return (
-    <AppContext.Provider value={{ hoveredTeam, setHoveredTeam, config, updateConfig }}>
+    <AppContext.Provider value={{ hoveredTeam, setHoveredTeam, config, updateConfig, applyScenario }}>
       {children}
     </AppContext.Provider>
   );
