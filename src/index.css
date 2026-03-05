@@ -1,0 +1,136 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #111;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 60px;
+}
+
+.halftone-canvas {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: scale(1) translate(-50%, -50%);
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.team-list {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-button {
+  padding: 12px 24px;
+  font-size: 18px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.team-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Control bar */
+
+.control-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  overflow-x: auto;
+  z-index: 100;
+}
+
+.control-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.control-item span {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.control-item input[type="range"] {
+  width: 80px;
+  cursor: pointer;
+}
+
+.control-item input[type="color"] {
+  width: 32px;
+  height: 24px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 1px;
+  cursor: pointer;
+  background: none;
+}
+
+.control-item--toggle {
+  gap: 6px;
+}
+
+.control-item--toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #111;
+}
+
+.control-item select {
+  font-size: 11px;
+  padding: 3px 4px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: white;
+  cursor: pointer;
+  max-width: 100px;
+}
+
+.control-divider {
+  width: 1px;
+  height: 36px;
+  background: #e8e8e8;
+  flex-shrink: 0;
+}
