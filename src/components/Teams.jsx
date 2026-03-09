@@ -20,7 +20,6 @@ export function Teams() {
                     playerImage: player.playerImage || team.playerImage,
                   })
                 }
-                onMouseLeave={() => setHoveredTeam(null)}
               >
                 {i + 1}. {player.name} {player.position}
               </li>
